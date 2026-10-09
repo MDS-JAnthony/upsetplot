@@ -1,0 +1,37 @@
+name: Build
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
+      code-quality: write
+    strategy:
+      matrix:
+        python-version: ['3.14', '3.13', '3.12', '3.11']
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Test with pytest
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+        pytest upsetplot/tests --doctest-modules --junitxml=junit/${{ matrix.python-version }}-test-results.xml --cov=com --cov-report=xml --cov-report=html
+
+    # - name: Upload coverage report
+    #   if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    #   uses: actions/upload-code-coverage@v1
+    #   with:
+    #     file: junit/${{ matrix.python-version }}-test-results.xml
+    #     language: python
+    #     label: code-coverage/pytest
